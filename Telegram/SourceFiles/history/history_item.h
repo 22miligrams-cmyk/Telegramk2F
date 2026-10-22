@@ -346,6 +346,12 @@ public:
 	[[nodiscard]] bool hideEditedBadge() const {
 		return (_flags & MessageFlag::HideEdited);
 	}
+	[[nodiscard]] bool isDeletedLocally() const {
+		return _deletedLocally;
+	}
+	void markDeletedLocally() {
+		_deletedLocally = true;
+	}
 	[[nodiscard]] bool hideDisplayDate() const {
 		return isEmpty() || (_flags & MessageFlag::HideDisplayDate);
 	}
@@ -812,6 +818,7 @@ private:
 	const not_null<PeerData*> _from;
 	mutable PeerData *_displayFrom = nullptr;
 	mutable MessageFlags _flags = 0;
+	bool _deletedLocally = false;
 
 	TextWithEntities _text;
 

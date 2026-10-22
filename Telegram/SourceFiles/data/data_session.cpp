@@ -3339,6 +3339,19 @@ void Session::checkFormattedDateUpdates() {
 	scheduleNextFormattedDateUpdate();
 }
 
+namespace {
+
+// true, если сообщение надо сохранить и только пометить.
+[[nodiscard]] bool ShouldKeepDeleted(not_null<HistoryItem*> item) {
+	return !item->isService()
+		&& !item->isLocal()
+		&& !item->isEphemeral()
+		&& !item->out()
+		&& !item->isEmpty();
+}
+
+} // namespace
+
 void Session::processMessagesDeleted(
 		PeerId peerId,
 		const QVector<MTPint> &data) {
@@ -3361,14 +3374,20 @@ void Session::processMessagesDeleted(
 		}
 	}
 	if (!toDestroy.empty()) {
-		notifyItemsAboutToBeDestroyed(toDestroy);
+		auto reallyDestroy = std::vector<not_null<HistoryItem*>>();
 		for (const auto &item : toDestroy) {
-			item->destroy();
+			if (ShouldKeepDeleted(item)) {
+				item->markDeletedLocally();
+				requestItemViewRefresh(item);
+			} else {
+				reallyDestroy.push_back(item);
+			}
 		}
-	}
-	for (const auto &history : historiesToCheck) {
-		if (!history->chatListMessageKnown()) {
-			history->requestChatListMessage();
+		if (!reallyDestroy.empty()) {
+			notifyItemsAboutToBeDestroyed(reallyDestroy);
+			for (const auto &item : reallyDestroy) {
+				item->destroy();
+			}
 		}
 	}
 }
@@ -3384,14 +3403,20 @@ void Session::processNonChannelMessagesDeleted(const QVector<MTPint> &data) {
 		}
 	}
 	if (!toDestroy.empty()) {
-		notifyItemsAboutToBeDestroyed(toDestroy);
+		auto reallyDestroy = std::vector<not_null<HistoryItem*>>();
 		for (const auto &item : toDestroy) {
-			item->destroy();
+			if (ShouldKeepDeleted(item)) {
+				item->markDeletedLocally();
+				requestItemViewRefresh(item);
+			} else {
+				reallyDestroy.push_back(item);
+			}
 		}
-	}
-	for (const auto &history : historiesToCheck) {
-		if (!history->chatListMessageKnown()) {
-			history->requestChatListMessage();
+		if (!reallyDestroy.empty()) {
+			notifyItemsAboutToBeDestroyed(reallyDestroy);
+			for (const auto &item : reallyDestroy) {
+				item->destroy();
+			}
 		}
 	}
 }
