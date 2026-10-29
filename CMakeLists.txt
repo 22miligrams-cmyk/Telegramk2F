@@ -23,6 +23,10 @@ project(Telegram
     HOMEPAGE_URL "https://desktop.telegram.org"
 )
 
+if (LINUX)
+    link_libraries(va va-drm)
+endif()
+
 if (APPLE)
     enable_language(OBJC OBJCXX)
 endif()
